@@ -3,8 +3,14 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
+	"io"
 	"log"
+	"net/http"
 )
+
+func httpHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, "Hey")
+}
 
 func main() {
 	db, err := sql.Open("mysql", "radiant:radiant@tcp(ec2-54-191-70-38.us-west-2.compute.amazonaws.com:3306)/radiant")
@@ -37,4 +43,7 @@ func main() {
 	}
 
 	defer db.Close()
+
+	http.HandleFunc("/", httpHandler)
+	http.ListenAndServe(":8100", nil)
 }
