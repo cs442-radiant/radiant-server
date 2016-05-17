@@ -6,53 +6,70 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"time"
 )
 
+func checkErr(err error, w http.ResponseWriter, msg string, code int) bool {
+	if err != nil {
+		errMsg := fmt.Sprintf("%s: %s", msg, err)
+		log.Println(errMsg)
+		http.Error(w, errMsg, code)
+	}
+
+	return err != nil
+}
+
 func GetRestaurant(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetRestaurant")
+
+	checkAndReconnect()
+
 	vars := mux.Vars(r)
 	restaurantName := vars["restaurantName"]
 
 	// Fix to defense SQL injection
 	rows, err := database.Query(fmt.Sprintf("SELECT id FROM Restaurant WHERE name = \"%s\"", restaurantName))
 
-	if err != nil {
-		// Handle error
-		fmt.Fprintln(w, err)
-	} else {
-		defer rows.Close()
+	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
+		return
+	}
 
-		var id int
-		var exists bool = false
+	defer rows.Close()
 
-		type Response struct {
-			Exists bool `json:"exists"`
+	var id int
+	var exists bool = false
+
+	type Response struct {
+		Exists bool `json:"exists"`
+	}
+
+	for rows.Next() {
+		if checkErr(rows.Scan(&id),
+			w, "Scan failed", http.StatusInternalServerError) {
+			return
+		}
+		if checkErr(json.NewEncoder(w).Encode(Response{Exists: true}),
+			w, "JSON encoding failed", http.StatusInternalServerError) {
+			return
 		}
 
-		for rows.Next() {
-			err := rows.Scan(&id)
+		exists = true
+		break
+	}
 
-			if err != nil {
-				log.Fatal(err)
-				fmt.Fprintln(w, err)
-			}
-
-			if err := json.NewEncoder(w).Encode(Response{Exists: true}); err != nil {
-				log.Fatal(err)
-			}
-			exists = true
-
-			break
-		}
-
-		if !exists {
-			if err := json.NewEncoder(w).Encode(Response{Exists: false}); err != nil {
-				log.Fatal(err)
-			}
+	if !exists {
+		if checkErr(json.NewEncoder(w).Encode(Response{Exists: false}),
+			w, "JSON encoding failed", http.StatusInternalServerError) {
+			return
 		}
 	}
 }
 
-func GetBundle(w http.ResponseWriter, r *http.Request) {
+func PostBundle(w http.ResponseWriter, r *http.Request) {
+	log.Println("PostBundle")
+
+	checkAndReconnect()
+
 	type Request struct {
 		RestaurantName    string `json:"restaurantName"`
 		BundleDescription string `json:"bundleDescription"`
@@ -60,20 +77,19 @@ func GetBundle(w http.ResponseWriter, r *http.Request) {
 
 	var request Request
 
-	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		fmt.Fprintln(w, err)
-		log.Fatal(err)
+	if checkErr(json.NewDecoder(r.Body).Decode(&request),
+		w, "Bad request JSON format", http.StatusBadRequest) {
 		return
 	}
+
+	log.Println(fmt.Sprintf("Received request: %+v", request))
 
 	rows, err := database.Query(fmt.Sprintf("SELECT id FROM Restaurant WHERE name = \"%s\"", request.RestaurantName))
-	defer rows.Close()
-
-	if err != nil {
-		fmt.Fprintln(w, err)
-		log.Fatal(err)
+	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 		return
 	}
+
+	defer rows.Close()
 
 	var restaurantId int
 
@@ -81,11 +97,9 @@ func GetBundle(w http.ResponseWriter, r *http.Request) {
 		rows.Scan(&restaurantId)
 	} else {
 		log.Println("No such restaurant exists... creating new restaurant")
-		rows, err := database.Query("SELECT MAX(id) FROM Restaurant")
 
-		if err != nil {
-			fmt.Fprintln(w, err)
-			log.Fatal(err)
+		rows, err := database.Query("SELECT MAX(id) FROM Restaurant")
+		if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 			return
 		}
 
@@ -97,60 +111,65 @@ func GetBundle(w http.ResponseWriter, r *http.Request) {
 
 		defer rows.Close()
 
-		{
-			var newRestaurantId = max + 1
+		var newRestaurantId = max + 1
 
-			_, err := database.Query(
-				fmt.Sprintf("INSERT INTO Restaurant VALUES(%d, \"%s\")", newRestaurantId, request.RestaurantName),
-			)
-
-			if err != nil {
-				fmt.Fprintln(w, err)
-				log.Fatal(err)
-				return
-			}
-
-			restaurantId = newRestaurantId
-		}
-	}
-
-	{
-		rows, err := database.Query("SELECT MAX(id) FROM Bundle")
-
-		if err != nil {
-			fmt.Fprintln(w, err)
-			log.Fatal(err)
+		_, err = database.Query(fmt.Sprintf("INSERT INTO Restaurant VALUES(%d, \"%s\")", newRestaurantId, request.RestaurantName))
+		if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 			return
 		}
 
-		var max int = 0
+		restaurantId = newRestaurantId
+	}
 
-		if rows.Next() {
-			rows.Scan(&max)
-		}
+	rows, err = database.Query("SELECT MAX(id) FROM Bundle")
+	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
+		return
+	}
 
-		{
-			var newBundleId = max + 1
+	var max int = 0
 
-			_, err := database.Query(
-				fmt.Sprintf("INSERT INTO Bundle VALUES(%d, %d, \"%s\")", newBundleId, restaurantId, request.BundleDescription),
-			)
+	if rows.Next() {
+		rows.Scan(&max)
+	}
 
-			if err != nil {
-				fmt.Fprintln(w, err)
-				log.Fatal(err)
-				return
-			}
+	var newBundleId = max + 1
 
-			type Response struct {
-				BundleId int `json:"bundleId"`
-			}
+	_, err = database.Query(fmt.Sprintf("INSERT INTO Bundle VALUES(%d, %d, \"%s\")", newBundleId, restaurantId, request.BundleDescription))
+	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
+		return
+	}
 
-			json.NewEncoder(w).Encode(Response{BundleId: newBundleId})
-		}
+	type Response struct {
+		BundleId int `json:"bundleId"`
+	}
+
+	if checkErr(json.NewEncoder(w).Encode(Response{BundleId: newBundleId}),
+		w, "JSON encoding failed", http.StatusInternalServerError) {
+		return
 	}
 }
 
 func PostSample(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Post Sample!")
+	log.Println("PostSample")
+
+	checkAndReconnect()
+
+	type Request struct {
+		BundleId  int       `json:"bundleId"`
+		Timestamp time.Time `json:"timestamp"`
+		WiFiList  string    `json:"WiFiList"`
+	}
+
+	var request Request
+
+	if err := json.NewDecoder(r.Body).Decode(&request); checkErr(err, w, "Bad request JSON format", http.StatusBadRequest) {
+		return
+	}
+
+	// TODO: Add logic to validate WiFiList string (JSON)
+
+	_, err := database.Query("INSERT INTO Sample VALUES(?, ?, ?, ?)", request.BundleId, time.Now(), request.Timestamp, request.WiFiList)
+	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
+		return
+	}
 }
