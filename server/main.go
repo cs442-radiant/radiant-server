@@ -3,16 +3,13 @@ package main
 import (
 	"database/sql"
 	_ "github.com/go-sql-driver/mysql"
-	"io"
 	"log"
 	"net/http"
 )
 
-func httpHandler(w http.ResponseWriter, r *http.Request) {
-	io.WriteString(w, "Hey")
-}
+var database *sql.DB
 
-func main() {
+func connectDB() (*sql.DB, error) {
 	db, err := sql.Open("mysql", "radiant:radiant@tcp(ec2-54-191-70-38.us-west-2.compute.amazonaws.com:3306)/radiant")
 
 	if err != nil {
@@ -26,24 +23,21 @@ func main() {
 		log.Fatal(err)
 	} else {
 		log.Print("Connection success")
-
-		var id int
-		rows, err := db.Query("select * from Record")
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			for rows.Next() {
-				err := rows.Scan(&id)
-				if err != nil {
-					log.Fatal(err)
-				}
-				log.Println(id)
-			}
-		}
 	}
 
-	defer db.Close()
+	return db, err
+}
 
-	http.HandleFunc("/", httpHandler)
-	http.ListenAndServe(":8100", nil)
+func main() {
+	var err error
+	database, err = connectDB()
+
+	if err != nil {
+		panic("Failed to connect to DB")
+	}
+
+	defer database.Close()
+
+	router := NewRouter()
+	log.Fatal(http.ListenAndServe(":8100", router))
 }
