@@ -19,10 +19,10 @@ var routes = Routes{
 		GetRestaurant,
 	},
 	Route{
-		"GetBundle",
-		"GET",
+		"PostBundle",
+		"POST",
 		"/bundle",
-		GetBundle,
+		PostBundle,
 	},
 	Route{
 		"PostSample",
