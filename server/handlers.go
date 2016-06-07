@@ -114,7 +114,7 @@ func PostBundle(w http.ResponseWriter, r *http.Request) {
 
 		var newRestaurantId = max + 1
 
-		_, err = database.Exec(fmt.Sprintf("INSERT INTO Restaurant VALUES(%d, \"%s\")", newRestaurantId, request.RestaurantName))
+		_, err = database.Exec(fmt.Sprintf("INSERT INTO Restaurant (id, name) VALUES(%d, \"%s\")", newRestaurantId, request.RestaurantName))
 		if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 			return
 		}
@@ -137,7 +137,7 @@ func PostBundle(w http.ResponseWriter, r *http.Request) {
 
 	var newBundleId = max + 1
 
-	_, err = database.Exec(fmt.Sprintf("INSERT INTO Bundle VALUES(%d, %d, \"%s\")", newBundleId, restaurantId, request.BundleDescription))
+	_, err = database.Exec(fmt.Sprintf("INSERT INTO Bundle (id, restaurantId, description) VALUES(%d, %d, \"%s\")", newBundleId, restaurantId, request.BundleDescription))
 	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 		return
 	}
@@ -183,7 +183,7 @@ func PostSample(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := database.Exec("INSERT INTO Sample VALUES(?, ?, ?, ?)", request.BundleId, time.Now(), request.Timestamp, wifiSampleStringBuf.String())
+	_, err := database.Exec("INSERT INTO Sample (bundleId, serverTimestamp, clientTimestamp, sample) VALUES(?, ?, ?, ?)", request.BundleId, time.Now(), request.Timestamp, wifiSampleStringBuf.String())
 	if checkErr(err, w, "SQL query failed", http.StatusInternalServerError) {
 		return
 	}
