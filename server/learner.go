@@ -79,7 +79,7 @@ func makeClassifier() (*knn.KNNClassifier, error) {
 		log.Println(fmt.Sprintf("Unable to get confusion matrix: %s", err.Error()))
 		return nil, err
 	}
-	log.Println(evaluation.GetSummary(confusionMat))
+	log.Println("\n", evaluation.GetSummary(confusionMat))
 
 	return cls, nil
 }
@@ -211,7 +211,7 @@ func learnMain() {
 				output = append(output, strconv.Itoa(level))
 			} else {
 				// Minimum value: -100
-				output = append(output, "-100")
+				output = append(output, "-10000")
 			}
 		}
 
@@ -221,8 +221,6 @@ func learnMain() {
 	}
 
 	// Close file here
-	//writer.Flush()
-
 	writer.Flush()
 	file.Close()
 
