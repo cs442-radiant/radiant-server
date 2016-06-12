@@ -30,4 +30,10 @@ var routes = Routes{
 		"/sample",
 		PostSample,
 	},
+	Route{
+		"PostLearn",
+		"POST",
+		"/learn",
+		PostLearn,
+	},
 }

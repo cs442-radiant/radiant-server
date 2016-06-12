@@ -14,7 +14,10 @@ func checkErr(err error, w http.ResponseWriter, msg string, code int) bool {
 	if err != nil {
 		errMsg := fmt.Sprintf("%s: %s", msg, err)
 		log.Println(errMsg)
-		http.Error(w, errMsg, code)
+
+		if w != nil {
+			http.Error(w, errMsg, code)
+		}
 	}
 
 	return err != nil
@@ -196,4 +199,15 @@ func PostSample(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(response); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
 		return
 	}
+}
+
+func PostLearn(w http.ResponseWriter, r *http.Request) {
+	log.Println("PostLearn")
+
+	if isLearning {
+		log.Println("Already in learning process ...")
+		return
+	}
+
+	go learn()
 }
