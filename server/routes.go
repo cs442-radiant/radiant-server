@@ -36,4 +36,10 @@ var routes = Routes{
 		"/learn",
 		PostLearn,
 	},
+	Route{
+		"GetCurrentLocation",
+		"GET",
+		"/location",
+		GetCurrentLocation,
+	},
 }

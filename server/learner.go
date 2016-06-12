@@ -169,26 +169,6 @@ func learnMain() {
 		}
 
 		for i := range APList {
-			// Leave the strongest 5 APs only
-			/*if len(APLevel) < 5 {
-				APLevel[APList[i].BSSID] = APList[i].Level
-			} else {
-				var smallestValue int = 0
-				var smallestKey string = ""
-
-				for k, v := range APLevel {
-					if smallestValue > v {
-						smallestKey = k
-						smallestValue = v
-					}
-				}
-
-				if smallestValue < APList[i].Level {
-					delete(APLevel, smallestKey)
-					APLevel[APList[i].BSSID] = APList[i].Level
-				}
-			}*/
-
 			APLevel[APList[i].BSSID] = APList[i].Level
 
 			_, exists := APMap[APList[i].BSSID]
@@ -225,8 +205,6 @@ func learnMain() {
 	lineCount := 0
 	for _, BSSID := range keys {
 		output = append(output, BSSID)
-		//output = append(output, strings.Replace(BSSID, ":", "", -1))
-		//output = append(output, strconv.Itoa(lineCount))
 		lineCount++
 	}
 	output = append(output, "restaurantId")
@@ -239,10 +217,10 @@ func learnMain() {
 		for _, BSSID := range keys {
 			level, exists := row.APLevel[BSSID]
 			if exists {
-				output = append(output, strconv.Itoa((level+100)*(level+100)))
+				output = append(output, strconv.Itoa(level))
 			} else {
 				// Minimum value: -100
-				output = append(output, "0")
+				output = append(output, "-100")
 			}
 		}
 

@@ -155,24 +155,24 @@ func PostBundle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type WiFiSample struct {
+	SSID         string `json:"SSID"`
+	BSSID        string `json:"BSSID"`
+	Capabilities string `json:"capabilities"`
+	Level        int    `json:"level"`
+	Frequency    int    `json:"frequency"`
+}
+
+type Request struct {
+	BundleId  int          `json:"bundleId"`
+	Timestamp time.Time    `json:"timestamp"`
+	WiFiList  []WiFiSample `json:"WiFiList"`
+}
+
 func PostSample(w http.ResponseWriter, r *http.Request) {
 	log.Println("PostSample")
 
 	checkAndReconnect()
-
-	type WiFiSample struct {
-		SSID         string `json:"SSID"`
-		BSSID        string `json:"BSSID"`
-		Capabilities string `json:"capabilities"`
-		Level        int    `json:"level"`
-		Frequency    int    `json:"frequency"`
-	}
-
-	type Request struct {
-		BundleId  int          `json:"bundleId"`
-		Timestamp time.Time    `json:"timestamp"`
-		WiFiList  []WiFiSample `json:"WiFiList"`
-	}
 
 	var request Request
 
@@ -210,4 +210,35 @@ func PostLearn(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go learn()
+}
+
+func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
+	log.Println("GetCurrentLocation")
+
+	checkAndReconnect()
+
+	var request Request
+
+	if err := json.NewDecoder(r.Body).Decode(&request); checkErr(err, w, "Bad request JSON format", http.StatusBadRequest) {
+		return
+	}
+
+	wifiSampleStringBuf := new(bytes.Buffer)
+
+	if err := json.NewEncoder(wifiSampleStringBuf).Encode(request.WiFiList); checkErr(err, w, "Bad request JSON format (WiFiList)", http.StatusBadRequest) {
+		return
+	}
+
+	// For prediction
+	if classifier != nil {
+		//classifier.Predict()
+	}
+
+	type Response struct {
+		RestaurantName string `json:"restaurantName"`
+	}
+
+	if err := json.NewEncoder(w).Encode(Response{RestaurantName: "Predicted name"}); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
+		return
+	}
 }
