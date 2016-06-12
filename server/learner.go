@@ -5,11 +5,19 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"github.com/sjwhitworth/golearn/base"
+	"github.com/sjwhitworth/golearn/evaluation"
+	"github.com/sjwhitworth/golearn/knn"
 	"log"
 	"math"
 	"os"
 	"strconv"
+	"strings"
 )
+
+var classifier *knn.KNNClassifier = nil
+
+const csvFileName string = "local/result.csv"
 
 var isLearning bool = false
 
@@ -50,6 +58,31 @@ func getBundleMap() (map[int]Restaurant, error) {
 	}
 
 	return result, nil
+}
+
+func makeClassifier() (*knn.KNNClassifier, error) {
+	rawData, err := base.ParseCSVToInstances(csvFileName, true)
+	if err != nil {
+		log.Println("Failed to open: ", csvFileName)
+		return nil, err
+	}
+
+	cls := knn.NewKnnClassifier("euclidean", 10)
+
+	trainData, testData := base.InstancesTrainTestSplit(rawData, 0.50)
+	cls.Fit(trainData)
+
+	predictions := cls.Predict(testData)
+	log.Println(predictions)
+
+	confusionMat, err := evaluation.GetConfusionMatrix(testData, predictions)
+	if err != nil {
+		log.Println(fmt.Sprintf("Unable to get confusion matrix: %s", err.Error()))
+		return nil, err
+	}
+	log.Println(evaluation.GetSummary(confusionMat))
+
+	return cls, nil
 }
 
 func learnMain() {
@@ -99,12 +132,11 @@ func learnMain() {
 		bundleId int
 	}
 
-	const fileName string = "local/result.csv"
-	file, err := os.Create(fileName)
+	file, err := os.Create(csvFileName)
 	defer file.Close()
 
 	if err != nil {
-		log.Println(fmt.Sprintf("Failed to create %s", fileName))
+		log.Println(fmt.Sprintf("Failed to create %s", csvFileName))
 		return
 	}
 
@@ -164,7 +196,7 @@ func learnMain() {
 
 	output := []string{}
 	for BSSID, _ := range APMap {
-		output = append(output, BSSID)
+		output = append(output, strings.Replace(BSSID, ":", "", -1))
 	}
 	output = append(output, "restaurantId")
 	writer.Write(output)
@@ -189,6 +221,16 @@ func learnMain() {
 	}
 
 	log.Println("Finished making CSV file.")
+
+	log.Println("Starting to make classifier...")
+
+	classifier, err = makeClassifier()
+	if err != nil {
+		log.Println("Failed to create classifier.")
+		return
+	}
+
+	log.Println("Classifier is built successfully.")
 
 	log.Println("Learning complete")
 }
