@@ -170,7 +170,7 @@ func learnMain() {
 
 		for i := range APList {
 			// Leave the strongest 5 APs only
-			if len(APLevel) < 5 {
+			/*if len(APLevel) < 5 {
 				APLevel[APList[i].BSSID] = APList[i].Level
 			} else {
 				var smallestValue int = 0
@@ -187,7 +187,9 @@ func learnMain() {
 					delete(APLevel, smallestKey)
 					APLevel[APList[i].BSSID] = APList[i].Level
 				}
-			}
+			}*/
+
+			APLevel[APList[i].BSSID] = APList[i].Level
 
 			_, exists := APMap[APList[i].BSSID]
 			if !exists {
