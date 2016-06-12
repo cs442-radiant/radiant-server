@@ -12,7 +12,6 @@ import (
 	"math"
 	"os"
 	"strconv"
-	"strings"
 )
 
 var classifier *knn.KNNClassifier = nil
@@ -94,7 +93,7 @@ func learnMain() {
 		return
 	}
 
-	rowsForCount, err := database.Query("SELECT COUNT(*) FROM Sample LIMIT 10")
+	rowsForCount, err := database.Query("SELECT COUNT(*) FROM Sample")
 
 	if checkErr(err, nil, "SQL query failed", -1) {
 		return
@@ -109,7 +108,7 @@ func learnMain() {
 		}
 	}
 
-	rows, err := database.Query("SELECT bundleId, sample FROM Sample LIMIT 10")
+	rows, err := database.Query("SELECT bundleId, sample FROM Sample")
 
 	if checkErr(err, nil, "SQL query failed", -1) {
 		return
@@ -133,7 +132,6 @@ func learnMain() {
 	}
 
 	file, err := os.Create(csvFileName)
-	defer file.Close()
 
 	if err != nil {
 		log.Println(fmt.Sprintf("Failed to create %s", csvFileName))
@@ -141,7 +139,6 @@ func learnMain() {
 	}
 
 	writer := csv.NewWriter(file)
-	defer writer.Flush()
 
 	APMap := make(map[string]string)
 
@@ -195,8 +192,11 @@ func learnMain() {
 	log.Println("Number of APs: ", len(APMap))
 
 	output := []string{}
-	for BSSID, _ := range APMap {
-		output = append(output, strings.Replace(BSSID, ":", "", -1))
+	lineCount := 0
+	for range APMap {
+		//output = append(output, strings.Replace(BSSID, ":", "", -1))
+		output = append(output, strconv.Itoa(lineCount))
+		lineCount++
 	}
 	output = append(output, "restaurantId")
 	writer.Write(output)
@@ -219,6 +219,12 @@ func learnMain() {
 
 		writer.Write(output)
 	}
+
+	// Close file here
+	//writer.Flush()
+
+	writer.Flush()
+	file.Close()
 
 	log.Println("Finished making CSV file.")
 
