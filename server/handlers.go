@@ -247,45 +247,19 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Make a new instance
-		length := len(BSSIDList) + 1
-		//attrs := make([]base.Attribute, length)
-		specs := make([]base.AttributeSpec, length)
+		specs := make([]base.AttributeSpec, len(BSSIDList) + 1)
 
 		allAttrs := testData.AllAttributes()
 
 		instance := base.NewDenseInstances()
-		//instance := base.NewDenseCopy(testData)
 
 		for i, attr := range allAttrs {
-			/*if len(allAttrs)-1 == i {
-				if err := instance.AddClassAttribute(attr); err != nil {
-					log.Println("Failed to AddClassAttribute")
-				} else {
-					specs[i], err = instance.GetAttribute(attr)
-					if err != nil {
-						log.Println("Failed to GetAttribute")
-					}
-				}
-			} else {*/
 			specs[i] = instance.AddAttribute(attr)
-			//}
 
 			if len(allAttrs)-1 == i {
 				instance.AddClassAttribute(attr)
 			}
 		}
-
-		//base.NewInstancesViewFromVisible(testData, 1, allAttrs)
-
-		/*	for i, BSSID := range BSSIDList {
-				attrs[i] = base.NewFloatAttribute(BSSID)
-				specs[i] = instance.AddAttribute(attrs[i])
-			}
-
-			attrs[length-1] = base.NewCategoricalAttribute()
-			attrs[length-1].SetName("restaurantId")
-			attrs[length-1].GetSysValFromString("동해참치")
-			specs[length-1] = instance.AddAttribute(attrs[length-1])*/
 
 		instance.Extend(1)
 
@@ -293,21 +267,12 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 			instance.Set(specs[i], 0, specs[i].GetAttribute().GetSysValFromString(output[i]))
 		}
 
-		//instance.Set(specs[length-1], 0, specs[length-1].GetAttribute().GetSysValFromString("X"))
-
 		log.Println("New instance: ")
 		log.Println(instance)
 
 		predictions := classifier.Predict(instance)
 		log.Println("Predictions: ")
 		log.Println(predictions)
-
-		/*confusionMat, err := evaluation.GetConfusionMatrix(instance, predictions)
-		if err != nil {
-			log.Println(fmt.Sprintf("Unable to get confusion matrix: %s", err.Error()))
-			return
-		}
-		log.Println("\n", evaluation.GetSummary(confusionMat))*/
 
 		type Response struct {
 			RestaurantName string `json:"restaurantName"`
