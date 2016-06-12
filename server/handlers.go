@@ -247,15 +247,22 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Make a new instance
+		log.Println(len(BSSIDList))
+
 		attrs := make([]base.Attribute, len(BSSIDList))
 		specs := make([]base.AttributeSpec, len(BSSIDList))
 
 		instance := base.NewDenseInstances()
-		instance.Extend(1)
 
 		for i, BSSID := range BSSIDList {
+			log.Println(i)
 			attrs[i] = base.NewFloatAttribute(BSSID)
 			specs[i] = instance.AddAttribute(attrs[i])
+		}
+
+		instance.Extend(1)
+
+		for i, _ := range BSSIDList {
 			instance.Set(specs[i], 0, specs[i].GetAttribute().GetSysValFromString(output[i]))
 		}
 
@@ -265,6 +272,8 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		predictions := classifier.Predict(instance)
 		log.Println("Predictions: ")
 		log.Println(predictions)
+
+		log.Println(predictions.RowString(0))
 
 		type Response struct {
 			RestaurantName string `json:"restaurantName"`
