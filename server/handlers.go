@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
+	"github.com/sjwhitworth/golearn/base"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -163,14 +165,14 @@ type WiFiSample struct {
 	Frequency    int    `json:"frequency"`
 }
 
-type Request struct {
-	BundleId  int          `json:"bundleId"`
-	Timestamp time.Time    `json:"timestamp"`
-	WiFiList  []WiFiSample `json:"WiFiList"`
-}
-
 func PostSample(w http.ResponseWriter, r *http.Request) {
 	log.Println("PostSample")
+
+	type Request struct {
+		BundleId  int          `json:"bundleId"`
+		Timestamp time.Time    `json:"timestamp"`
+		WiFiList  []WiFiSample `json:"WiFiList"`
+	}
 
 	checkAndReconnect()
 
@@ -217,28 +219,62 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 
 	checkAndReconnect()
 
+	type Request struct {
+		WiFiList []WiFiSample `json:"WiFiList"`
+	}
+
 	var request Request
 
 	if err := json.NewDecoder(r.Body).Decode(&request); checkErr(err, w, "Bad request JSON format", http.StatusBadRequest) {
 		return
 	}
 
-	wifiSampleStringBuf := new(bytes.Buffer)
-
-	if err := json.NewEncoder(wifiSampleStringBuf).Encode(request.WiFiList); checkErr(err, w, "Bad request JSON format (WiFiList)", http.StatusBadRequest) {
-		return
-	}
-
-	// For prediction
 	if classifier != nil {
-		//classifier.Predict()
-	}
+		log.Println("Classifier ready. Preparing for the prediction...")
 
-	type Response struct {
-		RestaurantName string `json:"restaurantName"`
-	}
+		output := []string{}
 
-	if err := json.NewEncoder(w).Encode(Response{RestaurantName: "Predicted name"}); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
-		return
+		for _, BSSID := range BSSIDList {
+			var level int = -100
+
+			for _, AP := range request.WiFiList {
+				if AP.BSSID == BSSID {
+					level = AP.Level
+				}
+			}
+
+			output = append(output, strconv.Itoa(level))
+		}
+
+		// Make a new instance
+		attrs := make([]base.Attribute, len(BSSIDList))
+		specs := make([]base.AttributeSpec, len(BSSIDList))
+
+		instance := base.NewDenseInstances()
+		instance.Extend(1)
+
+		for i, BSSID := range BSSIDList {
+			attrs[i] = base.NewFloatAttribute(BSSID)
+			specs[i] = instance.AddAttribute(attrs[i])
+			instance.Set(specs[i], 0, specs[i].GetAttribute().GetSysValFromString(output[i]))
+		}
+
+		log.Println("New instance: ")
+		log.Println(instance)
+
+		predictions := classifier.Predict(instance)
+		log.Println("Predictions: ")
+		log.Println(predictions)
+
+		type Response struct {
+			RestaurantName string `json:"restaurantName"`
+		}
+
+		if err := json.NewEncoder(w).Encode(Response{RestaurantName: "Predicted name"}); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
+			return
+		}
+	} else {
+		log.Println("Classifier not ready yet.")
+		http.Error(w, "Classifier not ready yet.", http.StatusBadRequest)
 	}
 }

@@ -20,8 +20,11 @@ var classifier *knn.KNNClassifier = nil
 const k int = 5
 const testSetProp float64 = 0.5
 const csvFileName string = "local/result.csv"
+const limit int = 200
 
 var isLearning bool = false
+
+var BSSIDList []string = nil
 
 func learn() {
 	learnInit()
@@ -110,7 +113,17 @@ func learnMain() {
 		}
 	}
 
-	rows, err := database.Query("SELECT bundleId, sample FROM Sample")
+	if limit != 0 {
+		numOfSamples = limit
+	}
+
+	var queryString = "SELECT bundleId, sample FROM Sample"
+
+	if limit != 0 {
+		queryString += " LIMIT " + strconv.Itoa(limit)
+	}
+
+	rows, err := database.Query(queryString)
 
 	if checkErr(err, nil, "SQL query failed", -1) {
 		return
@@ -194,16 +207,16 @@ func learnMain() {
 	log.Println("Number of APs: ", len(APMap))
 
 	// For ordered iteration
-	keys := []string{}
+	BSSIDList = []string{}
 	for k, _ := range APMap {
-		keys = append(keys, k)
+		BSSIDList = append(BSSIDList, k)
 	}
 
-	sort.Strings(keys)
+	sort.Strings(BSSIDList)
 
 	output := []string{}
 	lineCount := 0
-	for _, BSSID := range keys {
+	for _, BSSID := range BSSIDList {
 		output = append(output, BSSID)
 		lineCount++
 	}
@@ -214,7 +227,7 @@ func learnMain() {
 	for _, row := range outputSlice {
 		output := []string{}
 
-		for _, BSSID := range keys {
+		for _, BSSID := range BSSIDList {
 			level, exists := row.APLevel[BSSID]
 			if exists {
 				output = append(output, strconv.Itoa(level))
