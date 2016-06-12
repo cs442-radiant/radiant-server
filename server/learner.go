@@ -11,6 +11,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"sort"
 	"strconv"
 )
 
@@ -66,10 +67,14 @@ func makeClassifier() (*knn.KNNClassifier, error) {
 		return nil, err
 	}
 
-	cls := knn.NewKnnClassifier("euclidean", 10)
+	cls := knn.NewKnnClassifier("euclidean", 5)
 
 	trainData, testData := base.InstancesTrainTestSplit(rawData, 0.50)
 	cls.Fit(trainData)
+
+	log.Println(testData.RowString(0))
+	log.Println(testData.RowString(1))
+	log.Println(testData.RowString(2))
 
 	predictions := cls.Predict(testData)
 	log.Println(predictions)
@@ -167,7 +172,25 @@ func learnMain() {
 		}
 
 		for i := range APList {
-			APLevel[APList[i].BSSID] = APList[i].Level
+			// Leave the strongest 5 APs only
+			if len(APLevel) < 5 {
+				APLevel[APList[i].BSSID] = APList[i].Level
+			} else {
+				var smallestValue int = 0
+				var smallestKey string = ""
+
+				for k, v := range APLevel {
+					if smallestValue > v {
+						smallestKey = k
+						smallestValue = v
+					}
+				}
+
+				if smallestValue < APList[i].Level {
+					delete(APLevel, smallestKey)
+					APLevel[APList[i].BSSID] = APList[i].Level
+				}
+			}
 
 			_, exists := APMap[APList[i].BSSID]
 			if !exists {
@@ -191,11 +214,20 @@ func learnMain() {
 	log.Println("Finished extracting AP list.")
 	log.Println("Number of APs: ", len(APMap))
 
+	// For ordered iteration
+	keys := []string{}
+	for k, _ := range APMap {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
 	output := []string{}
 	lineCount := 0
-	for range APMap {
+	for _, BSSID := range keys {
+		output = append(output, BSSID)
 		//output = append(output, strings.Replace(BSSID, ":", "", -1))
-		output = append(output, strconv.Itoa(lineCount))
+		//output = append(output, strconv.Itoa(lineCount))
 		lineCount++
 	}
 	output = append(output, "restaurantId")
@@ -205,13 +237,16 @@ func learnMain() {
 	for _, row := range outputSlice {
 		output := []string{}
 
-		for BSSID, _ := range APMap {
+		log.Println("Start loop")
+		for _, BSSID := range keys {
+			log.Println(BSSID)
+
 			level, exists := row.APLevel[BSSID]
 			if exists {
-				output = append(output, strconv.Itoa(level))
+				output = append(output, strconv.Itoa((level+100)*(level+100)))
 			} else {
 				// Minimum value: -100
-				output = append(output, "-10000")
+				output = append(output, "0")
 			}
 		}
 
