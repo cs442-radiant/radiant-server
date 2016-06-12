@@ -237,10 +237,7 @@ func learnMain() {
 	for _, row := range outputSlice {
 		output := []string{}
 
-		log.Println("Start loop")
 		for _, BSSID := range keys {
-			log.Println(BSSID)
-
 			level, exists := row.APLevel[BSSID]
 			if exists {
 				output = append(output, strconv.Itoa((level+100)*(level+100)))
