@@ -17,6 +17,8 @@ import (
 
 var classifier *knn.KNNClassifier = nil
 
+const k int = 5
+const testSetProp float64 = 0.5
 const csvFileName string = "local/result.csv"
 
 var isLearning bool = false
@@ -67,17 +69,12 @@ func makeClassifier() (*knn.KNNClassifier, error) {
 		return nil, err
 	}
 
-	cls := knn.NewKnnClassifier("euclidean", 5)
+	cls := knn.NewKnnClassifier("euclidean", k)
 
-	trainData, testData := base.InstancesTrainTestSplit(rawData, 0.50)
+	trainData, testData := base.InstancesTrainTestSplit(rawData, testSetProp)
 	cls.Fit(trainData)
 
-	log.Println(testData.RowString(0))
-	log.Println(testData.RowString(1))
-	log.Println(testData.RowString(2))
-
 	predictions := cls.Predict(testData)
-	log.Println(predictions)
 
 	confusionMat, err := evaluation.GetConfusionMatrix(testData, predictions)
 	if err != nil {
