@@ -37,9 +37,9 @@ var routes = Routes{
 		PostLearn,
 	},
 	Route{
-		"GetCurrentLocation",
-		"GET",
+		"PostCurrentLocation",
+		"POST",
 		"/location",
-		GetCurrentLocation,
+		PostCurrentLocation,
 	},
 }

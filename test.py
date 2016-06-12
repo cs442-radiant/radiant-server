@@ -34,10 +34,10 @@ elif args.command == "PostLearn":
     isValidCommand = True
     commandUri = "learn"
     method = "POST"
-elif args.command == "GetLocation":
+elif args.command == "PostLocation":
     isValidCommand = True
     commandUri = "location"
-    method = "GET"
+    method = "POST"
 
 if method != "":
     curlArgs.append("-X")
