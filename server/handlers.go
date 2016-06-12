@@ -247,24 +247,29 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Make a new instance
-		log.Println(len(BSSIDList))
-
-		attrs := make([]base.Attribute, len(BSSIDList))
-		specs := make([]base.AttributeSpec, len(BSSIDList))
+		length := len(BSSIDList) + 1
+		attrs := make([]base.Attribute, length)
+		specs := make([]base.AttributeSpec, length)
 
 		instance := base.NewDenseInstances()
 
 		for i, BSSID := range BSSIDList {
-			log.Println(i)
 			attrs[i] = base.NewFloatAttribute(BSSID)
 			specs[i] = instance.AddAttribute(attrs[i])
 		}
+
+		attrs[length-1] = new(base.CategoricalAttribute)
+		attrs[length-1].SetName("restaurantId")
+		attrs[length-1].GetSysValFromString("A")
+		specs[length-1] = instance.AddAttribute(attrs[length-1])
 
 		instance.Extend(1)
 
 		for i, _ := range BSSIDList {
 			instance.Set(specs[i], 0, specs[i].GetAttribute().GetSysValFromString(output[i]))
 		}
+
+		instance.Set(specs[length-1], 0, specs[length-1].GetAttribute().GetSysValFromString("A"))
 
 		log.Println("New instance: ")
 		log.Println(instance)
@@ -273,7 +278,12 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		log.Println("Predictions: ")
 		log.Println(predictions)
 
-		log.Println(predictions.RowString(0))
+		/*confusionMat, err := evaluation.GetConfusionMatrix(instance, predictions)
+		if err != nil {
+			log.Println(fmt.Sprintf("Unable to get confusion matrix: %s", err.Error()))
+			return
+		}
+		log.Println("\n", evaluation.GetSummary(confusionMat))*/
 
 		type Response struct {
 			RestaurantName string `json:"restaurantName"`

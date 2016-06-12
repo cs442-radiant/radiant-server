@@ -25,6 +25,8 @@ const limit int = 200
 var isLearning bool = false
 
 var BSSIDList []string = nil
+var trainData base.FixedDataGrid = nil
+var testData base.FixedDataGrid = nil
 
 func learn() {
 	learnInit()
@@ -74,8 +76,11 @@ func makeClassifier() (*knn.KNNClassifier, error) {
 
 	cls := knn.NewKnnClassifier("euclidean", k)
 
-	trainData, testData := base.InstancesTrainTestSplit(rawData, testSetProp)
+	trainData, testData = base.InstancesTrainTestSplit(rawData, testSetProp)
 	cls.Fit(trainData)
+
+	log.Println("testData: ")
+	log.Println(testData)
 
 	predictions := cls.Predict(testData)
 
