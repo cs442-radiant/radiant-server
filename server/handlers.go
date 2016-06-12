@@ -248,20 +248,44 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 
 		// Make a new instance
 		length := len(BSSIDList) + 1
-		attrs := make([]base.Attribute, length)
+		//attrs := make([]base.Attribute, length)
 		specs := make([]base.AttributeSpec, length)
 
-		instance := base.NewDenseInstances()
+		allAttrs := testData.AllAttributes()
 
-		for i, BSSID := range BSSIDList {
-			attrs[i] = base.NewFloatAttribute(BSSID)
-			specs[i] = instance.AddAttribute(attrs[i])
+		instance := base.NewDenseInstances()
+		//instance := base.NewDenseCopy(testData)
+
+		for i, attr := range allAttrs {
+			/*if len(allAttrs)-1 == i {
+				if err := instance.AddClassAttribute(attr); err != nil {
+					log.Println("Failed to AddClassAttribute")
+				} else {
+					specs[i], err = instance.GetAttribute(attr)
+					if err != nil {
+						log.Println("Failed to GetAttribute")
+					}
+				}
+			} else {*/
+			specs[i] = instance.AddAttribute(attr)
+			//}
+
+			if len(allAttrs)-1 == i {
+				instance.AddClassAttribute(attr)
+			}
 		}
 
-		attrs[length-1] = new(base.CategoricalAttribute)
-		attrs[length-1].SetName("restaurantId")
-		attrs[length-1].GetSysValFromString("A")
-		specs[length-1] = instance.AddAttribute(attrs[length-1])
+		//base.NewInstancesViewFromVisible(testData, 1, allAttrs)
+
+		/*	for i, BSSID := range BSSIDList {
+				attrs[i] = base.NewFloatAttribute(BSSID)
+				specs[i] = instance.AddAttribute(attrs[i])
+			}
+
+			attrs[length-1] = base.NewCategoricalAttribute()
+			attrs[length-1].SetName("restaurantId")
+			attrs[length-1].GetSysValFromString("동해참치")
+			specs[length-1] = instance.AddAttribute(attrs[length-1])*/
 
 		instance.Extend(1)
 
@@ -269,7 +293,7 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 			instance.Set(specs[i], 0, specs[i].GetAttribute().GetSysValFromString(output[i]))
 		}
 
-		instance.Set(specs[length-1], 0, specs[length-1].GetAttribute().GetSysValFromString("A"))
+		//instance.Set(specs[length-1], 0, specs[length-1].GetAttribute().GetSysValFromString("X"))
 
 		log.Println("New instance: ")
 		log.Println(instance)
