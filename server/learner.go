@@ -247,7 +247,7 @@ func learnMain() {
 			}
 		}
 
-		output = append(output, strconv.Itoa(bundleMap[row.bundleId].Id))
+		output = append(output, bundleMap[row.bundleId].Name)
 
 		writer.Write(output)
 	}
