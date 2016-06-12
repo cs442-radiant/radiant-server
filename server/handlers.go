@@ -247,7 +247,7 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Make a new instance
-		specs := make([]base.AttributeSpec, len(BSSIDList) + 1)
+		specs := make([]base.AttributeSpec, len(BSSIDList)+1)
 
 		allAttrs := testData.AllAttributes()
 
@@ -278,7 +278,13 @@ func GetCurrentLocation(w http.ResponseWriter, r *http.Request) {
 			RestaurantName string `json:"restaurantName"`
 		}
 
-		if err := json.NewEncoder(w).Encode(Response{RestaurantName: "Predicted name"}); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
+		var result string = "No proper restaurant"
+
+		if predictions != nil {
+			result = predictions.RowString(0)
+		}
+
+		if err := json.NewEncoder(w).Encode(Response{RestaurantName: result}); checkErr(err, w, "Failed to encode response", http.StatusInternalServerError) {
 			return
 		}
 	} else {

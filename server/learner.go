@@ -20,7 +20,7 @@ var classifier *knn.KNNClassifier = nil
 const k int = 5
 const testSetProp float64 = 0.5
 const csvFileName string = "local/result.csv"
-const limit int = 200
+const limit int = 0
 
 var isLearning bool = false
 
