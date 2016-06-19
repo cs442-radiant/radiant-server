@@ -79,9 +79,6 @@ func makeClassifier() (*knn.KNNClassifier, error) {
 	trainData, testData = base.InstancesTrainTestSplit(rawData, testSetProp)
 	cls.Fit(trainData)
 
-	log.Println("testData: ")
-	log.Println(testData)
-
 	predictions := cls.Predict(testData)
 
 	confusionMat, err := evaluation.GetConfusionMatrix(testData, predictions)

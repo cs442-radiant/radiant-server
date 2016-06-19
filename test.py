@@ -6,7 +6,7 @@ from subprocess import call
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-p", "--port", type=int, default=8100)
-parser.add_argument("--host", default="ec2-54-191-70-38.us-west-2.compute.amazonaws.com")
+parser.add_argument("--host", default="104.199.139.91")
 parser.add_argument("command")
 parser.add_argument("-l", "--local", action='store_true')
 parser.add_argument("-d", "--data", help="Path to .json file.")

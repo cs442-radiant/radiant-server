@@ -215,7 +215,7 @@ func PostLearn(w http.ResponseWriter, r *http.Request) {
 }
 
 func PostCurrentLocation(w http.ResponseWriter, r *http.Request) {
-	log.Println("GetCurrentLocation")
+	log.Println("PostCurrentLocation")
 
 	checkAndReconnect()
 
