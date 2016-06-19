@@ -170,6 +170,8 @@ func learnMain() {
 
 	outputSlice := []OutputRow{}
 
+	apCountSum := 0
+
 	for rows.Next() {
 		var bundleId int
 		var APList []AP
@@ -192,6 +194,8 @@ func learnMain() {
 			}
 		}
 
+		apCountSum += len(APList)
+
 		outputSlice = append(outputSlice, OutputRow{APLevel: APLevel, bundleId: bundleId})
 
 		count++
@@ -206,6 +210,13 @@ func learnMain() {
 	}
 
 	log.Println("Finished extracting AP list.")
+
+	for k, v := range APMap {
+		fmt.Println(k, ",", v)
+	}
+
+	log.Println("Average AP per sample: ", float64(apCountSum)/float64(count))
+
 	log.Println("Number of APs: ", len(APMap))
 
 	// For ordered iteration
